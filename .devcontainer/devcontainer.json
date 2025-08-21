@@ -17,7 +17,7 @@
       ]
     }
   },
-  "forwardPorts": [7860, 8000, 8001, 11434],
+  "forwardPorts": [8000, 8001, 11434],
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true
