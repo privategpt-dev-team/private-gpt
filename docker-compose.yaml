@@ -1,9 +1,11 @@
-services:
+überarbeite mien file: services:
 
   #-----------------------------------
   #---- Private-GPT services ---------
   #-----------------------------------
 
+  # Private-GPT service for the Ollama CPU and GPU modes
+  # This service builds from an external Dockerfile and runs the Ollama mode.
   private-gpt-ollama:
     image: ${PGPT_IMAGE:-zylonai/private-gpt}:${PGPT_TAG:-0.6.2}-ollama  # x-release-please-version
     user: root
@@ -13,7 +15,7 @@ services:
     volumes:
       - ./local_data:/home/worker/app/local_data
     ports:
-      - "8001:8001"   # API
+      - "8001:8001"
     environment:
       PORT: 8001
       PGPT_PROFILES: docker
@@ -30,6 +32,8 @@ services:
       ollama:
         condition: service_healthy
 
+  # Private-GPT service for the local mode
+  # This service builds from a local Dockerfile and runs the application in local mode.
   private-gpt-llamacpp-cpu:
     image: ${PGPT_IMAGE:-zylonai/private-gpt}:${PGPT_TAG:-0.6.2}-llamacpp-cpu # x-release-please-version
     user: root
@@ -39,7 +43,7 @@ services:
     volumes:
       - ./local_data/:/home/worker/app/local_data
       - ./models/:/home/worker/app/models
-    entrypoint: sh -c ".venv/bin.python scripts/setup && .venv/bin/python -m private_gpt"
+    entrypoint: sh -c ".venv/bin/python scripts/setup && .venv/bin/python -m private_gpt"
     ports:
       - "8001:8001"
     environment:
@@ -50,38 +54,11 @@ services:
       - llamacpp-cpu
 
   #-----------------------------------
-  #---- NEW: UI (Gradio) -------------
-  #-----------------------------------
-  private-gpt-ui:
-    image: ${PGPT_IMAGE:-zylonai/private-gpt}:${PGPT_TAG:-0.6.2}-ollama
-    # Wähle genau EINE der folgenden Zeilen (lass die andere auskommentiert):
-    command: sh -c ".venv/bin/python -m private_gpt.ui"
-    # command: sh -c ".venv/bin/python -m private_gpt.ui.app"
-    depends_on:
-      - private-gpt-ollama
-    environment:
-      # UI → API (interner Service-Name + Port der API)
-      PGPT__API__BASE_URL: http://private-gpt-ollama:8001
-
-      # Gradio hinter Codespaces/Proxy
-      GRADIO_SERVER_NAME: 0.0.0.0
-      GRADIO_SERVER_PORT: 8000
-      GRADIO_ALLOW_REMOTE: "1"
-      GRADIO_USE_WEBSOCKETS: "false"   # wichtig in Codespaces
-      GRADIO_ROOT_PATH: "/"
-
-      # Optional: falls du die gleichen PGPT-Settings durchreichen willst
-      PGPT__UI__HOST: 0.0.0.0
-      PGPT__UI__PORT: 8000
-    ports:
-      - "8000:8000"   # UI
-    profiles:
-      - ""
-
-  #-----------------------------------
   #---- Ollama services --------------
   #-----------------------------------
 
+  # Traefik reverse proxy for the Ollama service
+  # This will route requests to the Ollama service based on the profile.
   ollama:
     image: traefik:v2.10
     healthcheck:
@@ -110,6 +87,7 @@ services:
       - ollama-cuda
       - ollama-api
 
+  # Ollama service for the CPU mode
   ollama-cpu:
     image: ollama/ollama:latest
     ports:
@@ -120,6 +98,7 @@ services:
       - ""
       - ollama-cpu
 
+  # Ollama service for the CUDA mode
   ollama-cuda:
     image: ollama/ollama:latest
     ports:
